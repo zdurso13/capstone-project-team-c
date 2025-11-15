@@ -74,13 +74,18 @@ marathons_all <- bind_rows(
   nyc_clean,
   chicago_clean
 )
+str(marathons_all)
 ```
 
+Select only years we need (1996 to 2025)
 ```{r}
-head(marathons_all)
+marathons_all <- marathons_all %>%
+  filter(year >= 1996 & year <= 2025)
+
+str(marathons_all)
 ```
 
-Chip-Time Cleaning Function (pulled from chatgbt)
+Chip-Time Cleaning Function (pulled from chatgbt): need chip_seconds to find the average finishing times
 ```{r}
 clean_chip_time <- function(x) {
   
@@ -117,7 +122,7 @@ marathons_all <- marathons_all %>%
   mutate(chip_time_clean = clean_chip_time(chip_time))
 ```
 
-Convert the cleaned chip_time values to H:M:S, need chip_seconds to find the average finishing times
+Convert the cleaned chip_time values to H:M:S and get chip_seconds
 ```{r}
 marathons_all <- marathons_all %>%
   mutate(
@@ -129,13 +134,23 @@ marathons_all <- marathons_all %>%
 head(marathons_all)
 ```
 
-Need to see what we want to do with these missing values and where they are comming from(this is where I left off)
+Need to see what we want to do with these missing values and where they are coming from
 ```{r}
 marathons_all %>% 
   summarize(missing_finish_times = sum(is.na(chip_seconds)))
+
+marathons_all %>% 
+  filter(is.na(chip_seconds))
 ```
 
-Next we need to compute average finishing times, group by: year, marathon, gender, performance group (will probably add this later)
+Remove missing finish times. This is safe because we only use average finishing times in our model, so individual missing times don not matter. Also there are only 3 total. 
+```{r}
+marathons_all <- marathons_all %>%
+  filter(!is.na(chip_seconds))
+```
+
+
+Next we need to compute average finishing times, group by: year, marathon, gender, performance group (will probably add performance group later)
 
 ```{r}
 avg_times <- marathons_all %>%
@@ -145,4 +160,39 @@ avg_times <- marathons_all %>%
 avg_times
 ```
 
-**Looks like there is missing info for several years, and the gender column needs to be cleaned
+
+Labeling Gender as 'male', 'female', or 'unknown', nonbinary falls under female
+
+```{r}
+unique(avg_times$gender)
+```
+
+```{r}
+avg_times <- avg_times %>%
+  mutate(
+    gender = tolower(gender),
+    gender = case_when(
+      gender %in% c("male", "m") ~ "male",
+      gender %in% c("female", "f", "w", "x", "nonbinary", "nb") ~ "female",
+      TRUE ~ "unknown"
+    )
+  )
+
+table(avg_times$gender)
+```
+
+
+Removing unknowns since we have only 14 unknowns, which is less than 4% of the data set and they will not help the model and most likely add noise:
+```{r}
+avg_times <- avg_times %>% 
+  filter(gender != "unknown")
+
+table(avg_times$gender)
+```
+
+```{r}
+avg_times
+```
+
+
+-> Next we need to merge the avg_times data set with the weather and airquality dataframes
