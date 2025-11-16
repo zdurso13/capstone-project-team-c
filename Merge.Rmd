@@ -8,6 +8,7 @@ libraies
 ```{r}
 library(dplyr)
 library(lubridate)
+library(readr)
 ```
 
 Importing data
@@ -110,10 +111,10 @@ marathons_all <- bind_rows(
 str(marathons_all)
 ```
 
-Select only years we need (1996 to 2025)
+Select only years we need (1996 to 2019)
 ```{r}
 marathons_all <- marathons_all %>%
-  filter(year >= 1996 & year <= 2025)
+  filter(year >= 1996 & year <= 2019)
 
 str(marathons_all)
 ```
@@ -202,7 +203,7 @@ marathons_all <- marathons_all %>%
 table(marathons_all$gender)
 ```
 
-Removing unknowns since we have only 56 unknowns, and they will not help the model and most likely add noise:
+Removing unknowns since we have only 29 unknowns, and they will not help the model and most likely add noise:
 ```{r}
 marathons_all <- marathons_all %>% 
   filter(gender != "unknown")
